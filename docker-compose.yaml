@@ -1,0 +1,34 @@
+version: "3"
+services:
+
+  m3dbnode:
+    image: quay.io/m3db/m3dbnode:latest
+    ports:
+      - "7201:7201"
+      - "7203:7203"
+      - "7204:7204"
+      - "9003:9003"
+    volumes:
+      - "./data/m3db_data:/var/lib/m3db"
+#      - "./config/m3dbnode:/etc/m3dbnode"
+#    command: "ls -al /etc/m3dbnode; /bin/m3dbnode -f /etc/m3dbnode/m3dbnode.yml"
+    hostname: m3dbnode
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./data/grafana:/var/lib/grafana"
+      - "./conf/provisioning:/etc/grafana/provisioning"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    links:
+      - m3dbnode
+
+  haggar:
+    build: ./haggar
+    command: sh -c "sleep 300 && ./haggar -agents=10 -metrics=10000 -carbon=carbon-clickhouse:2003"
+    links:
+      - m3dbnode
